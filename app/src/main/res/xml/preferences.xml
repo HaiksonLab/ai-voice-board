@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <PreferenceCategory android:title="@string/pref_category_api">
+
+        <EditTextPreference
+            android:key="api_key"
+            android:title="@string/pref_api_key"
+            android:summary="@string/pref_api_key_summary"
+            android:inputType="textPassword"
+            android:singleLine="true" />
+
+        <ListPreference
+            android:key="model"
+            android:title="@string/pref_model"
+            android:entries="@array/model_entries"
+            android:entryValues="@array/model_values"
+            android:defaultValue="gpt-4o-transcribe" />
+
+        <EditTextPreference
+            android:key="prompt"
+            android:title="@string/pref_prompt"
+            android:summary="@string/pref_prompt_summary"
+            android:singleLine="false" />
+
+        <EditTextPreference
+            android:key="proxy"
+            android:title="@string/pref_proxy"
+            android:summary="@string/pref_proxy_summary"
+            android:singleLine="true"
+            android:hint="socks5h://127.0.0.1:1080" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/pref_category_output">
+
+        <SwitchPreferenceCompat
+            android:key="fmt_enable"
+            android:title="@string/pref_fmt_enable"
+            android:summary="@string/pref_fmt_enable_summary"
+            android:defaultValue="true" />
+
+    </PreferenceCategory>
+
+</PreferenceScreen>

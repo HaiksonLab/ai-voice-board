@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">AI Voice Board</string>
+    <string name="ime_name">AI Voice Board</string>
+
+    <!-- Settings -->
+    <string name="pref_category_api">Whisper API</string>
+    <string name="pref_api_key">API Key</string>
+    <string name="pref_api_key_summary">OpenAI API key (sk-…)</string>
+    <string name="pref_model">Model</string>
+    <string name="pref_prompt">Prompt</string>
+    <string name="pref_prompt_summary">Hint for the model (terminology, language style)</string>
+    <string name="pref_proxy">Proxy</string>
+    <string name="pref_proxy_summary">SOCKS5 proxy, e.g. socks5h://127.0.0.1:1080 (leave empty to disable)</string>
+    <string name="pref_category_output">Output</string>
+    <string name="pref_fmt_enable">Line break after sentence</string>
+    <string name="pref_fmt_enable_summary">Insert newline after . ! ?</string>
+
+    <!-- Keyboard status messages -->
+    <string name="status_idle">Tap to record</string>
+    <string name="status_recording">Recording… %1$s  (tap to stop)</string>
+    <string name="status_transcribing">Transcribing…</string>
+    <string name="status_cancelled">Cancelled</string>
+    <string name="status_nothing">Nothing recognised</string>
+    <string name="status_no_cache">No saved recording</string>
+    <string name="status_no_last_text">No saved text</string>
+    <string name="status_error_api_key">Set API key in settings</string>
+    <string name="status_error_record">Mic error — check permission</string>
+
+    <!-- Settings screen -->
+    <string name="settings_title">AI Voice Board — Settings</string>
+    <string name="settings_enable_ime">Enable keyboard in system settings</string>
+    <string name="settings_select_ime">Select AI Voice Board as input method</string>
+    <string name="settings_save">Save</string>
+    <string name="settings_saved">Saved</string>
+    <string name="menu_retry">Retry last recording</string>
+    <string name="menu_paste_last">Paste last text</string>
+    <string name="menu_settings">Settings</string>
+    <string name="permission_mic_request">Grant microphone permission</string>
+    <string name="permission_mic_granted">✓ Microphone permission granted</string>
+    <string name="permission_mic_denied">Microphone permission denied — voice input will not work</string>
+
+    <!-- Model list -->
+    <string-array name="model_entries">
+        <item>gpt-4o-transcribe</item>
+        <item>gpt-4o-mini-transcribe</item>
+        <item>whisper-1</item>
+    </string-array>
+    <string-array name="model_values">
+        <item>gpt-4o-transcribe</item>
+        <item>gpt-4o-mini-transcribe</item>
+        <item>whisper-1</item>
+    </string-array>
+</resources>

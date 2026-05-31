@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.AiVoiceBoard" parent="Theme.AppCompat.DayNight.DarkActionBar">
+        <item name="colorPrimary">#1976D2</item>
+        <item name="colorPrimaryDark">#1565C0</item>
+        <item name="colorAccent">#F57C00</item>
+    </style>
+
+    <color name="ic_launcher_background">#1976D2</color>
+</resources>

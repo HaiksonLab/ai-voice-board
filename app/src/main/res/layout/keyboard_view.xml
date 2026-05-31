@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:background="#111827"
+    android:paddingLeft="12dp"
+    android:paddingRight="12dp"
+    android:paddingTop="10dp"
+    android:paddingBottom="10dp"
+    android:gravity="center_vertical">
+
+    <!-- Left: tap = switch IME, long press = menu -->
+    <ImageButton
+        android:id="@+id/btnSwitchIme"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:src="@drawable/ic_keyboard"
+        android:scaleType="center"
+        android:background="@drawable/bg_circle_none"
+        android:contentDescription="Switch keyboard" />
+
+    <!-- Middle + Right wrapped in FrameLayout so Clear can overlay as absolute child -->
+    <FrameLayout
+        android:layout_width="0dp"
+        android:layout_height="44dp"
+        android:layout_weight="1">
+
+        <!-- Status text fills entire frame -->
+        <TextView
+            android:id="@+id/tvStatus"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:textColor="#6B7280"
+            android:textSize="12sp"
+            android:gravity="center"
+            android:paddingLeft="4dp"
+            android:paddingRight="156dp"
+            android:singleLine="true"
+            android:ellipsize="end"
+            android:includeFontPadding="false" />
+
+        <!-- Right buttons section — pinned to the end -->
+        <FrameLayout
+            android:layout_width="152dp"
+            android:layout_height="match_parent"
+            android:layout_gravity="end">
+
+            <!-- IDLE: [⌫] [·] [🎤] [·] [↵] -->
+            <LinearLayout
+                android:id="@+id/rowIdle"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:visibility="visible">
+
+                <ImageButton
+                    android:id="@+id/btnBackspace"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:src="@drawable/ic_backspace"
+                    android:scaleType="center"
+                    android:background="@drawable/bg_circle_none"
+                    android:contentDescription="Backspace" />
+
+                <Space android:layout_width="0dp" android:layout_height="0dp" android:layout_weight="1" />
+
+                <ImageButton
+                    android:id="@+id/btnMic"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:src="@drawable/ic_mic"
+                    android:scaleType="center"
+                    android:background="@drawable/bg_circle_gray"
+                    android:contentDescription="Record" />
+
+                <Space android:layout_width="0dp" android:layout_height="0dp" android:layout_weight="1" />
+
+                <ImageButton
+                    android:id="@+id/btnEnter"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:src="@drawable/ic_enter"
+                    android:scaleType="center"
+                    android:background="@drawable/bg_circle_none"
+                    android:contentDescription="New line" />
+
+            </LinearLayout>
+
+            <!-- RECORDING: [✕] [·] [⏹] [·] [↑] -->
+            <LinearLayout
+                android:id="@+id/rowRecording"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:visibility="gone">
+
+                <ImageButton
+                    android:id="@+id/btnCancel"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:src="@drawable/ic_close"
+                    android:scaleType="center"
+                    android:background="@drawable/bg_circle_none"
+                    android:contentDescription="Cancel" />
+
+                <Space android:layout_width="0dp" android:layout_height="0dp" android:layout_weight="1" />
+
+                <ImageButton
+                    android:id="@+id/btnStop"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:src="@drawable/ic_stop"
+                    android:scaleType="center"
+                    android:background="@drawable/bg_circle_dark"
+                    android:contentDescription="Stop" />
+
+                <Space android:layout_width="0dp" android:layout_height="0dp" android:layout_weight="1" />
+
+                <ImageButton
+                    android:id="@+id/btnStopEnter"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:src="@drawable/ic_send"
+                    android:scaleType="center"
+                    android:background="@drawable/bg_circle_gray"
+                    android:contentDescription="Send" />
+
+            </LinearLayout>
+
+            <!-- TRANSCRIBING: [✕] [·] [spinner] [·] [↑ disabled] -->
+            <LinearLayout
+                android:id="@+id/rowTranscribing"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:visibility="gone">
+
+                <ImageButton
+                    android:id="@+id/btnCancelTranscribe"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:src="@drawable/ic_close"
+                    android:scaleType="center"
+                    android:background="@drawable/bg_circle_none"
+                    android:contentDescription="Cancel" />
+
+                <Space android:layout_width="0dp" android:layout_height="0dp" android:layout_weight="1" />
+
+                <FrameLayout
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:background="@drawable/bg_circle_dark">
+                    <ProgressBar
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:layout_gravity="center"
+                        android:indeterminate="true"
+                        android:indeterminateTint="#FFFFFF"
+                        style="?android:attr/progressBarStyle" />
+                </FrameLayout>
+
+                <Space android:layout_width="0dp" android:layout_height="0dp" android:layout_weight="1" />
+
+                <ImageButton
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:src="@drawable/ic_send"
+                    android:scaleType="center"
+                    android:background="@drawable/bg_circle_gray"
+                    android:alpha="0.3"
+                    android:enabled="false"
+                    android:contentDescription="Send disabled" />
+
+            </LinearLayout>
+
+        </FrameLayout>
+
+        <!-- Clear pill — overlay, floats to the left of backspace on hold -->
+        <TextView
+            android:id="@+id/btnClear"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:layout_gravity="end|center_vertical"
+            android:layout_marginEnd="160dp"
+            android:text="Clear"
+            android:textColor="#FFFFFF"
+            android:textSize="13sp"
+            android:gravity="center"
+            android:paddingLeft="16dp"
+            android:paddingRight="16dp"
+            android:includeFontPadding="false"
+            android:background="@drawable/bg_popup"
+            android:visibility="gone" />
+
+    </FrameLayout>
+
+</LinearLayout>
