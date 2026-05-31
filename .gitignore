@@ -11,3 +11,4 @@ app/build/
 local.properties
 CLAUDE.md
 *.pdf
+*.apk
