@@ -1,20 +1,23 @@
 # Changelog
 
+All notable changes to this project will be documented in this file.
+Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
+
 ## [1.0.0] - 2026-05-31
 
-Initial release.
-
-### Features
+### Added
+- Initial release
+- Custom keyboard (InputMethodService) with voice-to-text via OpenAI Whisper API
 - Voice recording via Android `AudioRecord` (16 kHz, 16-bit mono WAV)
-- Transcription via OpenAI Whisper API (`whisper-1`, `gpt-4o-transcribe`, `gpt-4o-mini-transcribe`)
+- Text insertion at cursor position via `InputConnection`
 - Single-row keyboard UI with idle / recording / transcribing states
-- Stop + Send button — transcribe and submit (150 ms delay + `IME_ACTION_SEND`)
-- WAV cache — retry last recording on API failure
-- Paste last recognised text
-- Backspace with hold-to-repeat and swipe-up Clear overlay
-- IME switcher with overflow menu (long press)
-- Auto-cancel on keyboard hide (`onWindowHidden`)
-- Text formatting — newline after sentence-ending punctuation
-- Settings screen with mic permission request, API key, model, prompt, proxy
-- Dark theme, circular vector-icon buttons, `CenteredImageSpan` mic icon in status
-- `onEvaluateFullscreenMode() = false` — prevents keyboard from covering input in some apps
+- **Stop + Send** — transcribe and submit in one tap
+- **Cancel** while recording or transcribing
+- **Retry** — resend the last recording on API failure (cached WAV)
+- **Paste last** — re-insert the last recognized text
+- Backspace with hold-to-repeat and swipe-up **Clear** overlay
+- One-tap switch to previous keyboard, overflow menu via long press
+- Auto-cancel recording/transcription when the keyboard is hidden
+- Optional line break after sentence-ending punctuation (`.!?`)
+- Settings screen: API key, model, prompt, proxy, formatting, mic permission
+- Configurable `Model`, `Prompt`, and SOCKS5 `Proxy`

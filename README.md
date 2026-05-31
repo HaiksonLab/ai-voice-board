@@ -1,97 +1,109 @@
-# AI Voice Board
+🇬🇧 **English** | [🇷🇺 Русский](README.ru.md)
 
-An Android custom keyboard (InputMethodService) that records your voice, transcribes it via the OpenAI Whisper API, and types the result wherever your cursor is.
+[![Latest release](https://img.shields.io/github/v/release/HaiksonLab/ai-voice-board)](https://github.com/HaiksonLab/ai-voice-board/releases) [![Changelog](https://img.shields.io/badge/changelog-view-blue)](CHANGELOG.md)
 
-Inspired by and ported from [ai-voice-input](https://github.com/HaiksonLab/ai-voice-input) — a Windows AutoHotkey script with the same idea.
+# 🎙 AI Voice Board
 
----
+Android voice-to-text keyboard powered by OpenAI Whisper API.
+Tap the mic — speak — text gets typed into any input field.
+
+A companion to [ai-voice-input](https://github.com/HaiksonLab/ai-voice-input) (the Windows version) — same idea, native on Android as a custom keyboard.
 
 ## Features
 
-- **Single-row keyboard UI** — minimal, stays out of the way
-- **Voice recording** → Whisper API → text inserted at cursor
-- **Stop + Send** — transcribe and submit in one tap (works in ChatGPT, Telegram, etc.)
-- **Retry** — resend last recording if API failed (no internet, expired key, etc.)
-- **Paste last** — reinsert last recognised text without re-recording
-- **Backspace** — tap to delete one char, hold to repeat; swipe up on the **Clear** pill to wipe the whole field
-- **IME switcher** — one tap returns to your previous keyboard (Yandex, Gboard, etc.)
-- **Auto-cancel** — recording/transcription is cancelled when the keyboard is hidden
-- **Text formatting** — optional newline after sentence-ending punctuation (`.!?`)
-- **Dark theme**, circular vector-icon buttons
-
----
+- Custom keyboard (InputMethodService) — works in any app with a text field
+- Speech recognition via OpenAI Whisper API (excellent quality for any language)
+- Text typed at the cursor position via `InputConnection`
+- **Stop + Send** — transcribe and submit the message in one tap (ChatGPT, Telegram, etc.)
+- **Cancel** while recording or transcribing — abort without inserting text
+- **Retry** — resend the last recording if the API call failed (no internet, expired key)
+- **Paste last** — re-insert the last recognized text without re-recording
+- Backspace with hold-to-repeat and a swipe-up **Clear** overlay to wipe the field
+- One-tap switch back to your previous keyboard (Yandex, Gboard, etc.)
+- Recording auto-cancels when the keyboard is hidden
+- Optional line break after each sentence
+- All settings in the app — no code editing needed
 
 ## Requirements
 
 - Android 8.0+ (API 26)
-- OpenAI API key with access to Whisper / GPT-4o transcription models
+- OpenAI API key with Audio API access: [platform.openai.com/api-keys](https://platform.openai.com/api-keys)
+- Internet connection for transcription
 
----
+## Installation
 
-## Build
+**Option A — APK (recommended):**
+1. Download `AiVoiceBoard-vX.X.X.apk` from the [latest release](https://github.com/HaiksonLab/ai-voice-board/releases/latest)
+2. Copy it to your phone and install (allow *Install from unknown sources* if prompted)
+3. Open the **AI Voice Board** app
+4. Tap **Grant microphone permission**
+5. Tap **Enable keyboard** → enable it in system settings
+6. Tap **Select AI Voice Board** → choose it as input method
+7. Enter your OpenAI API key and tap **Save**
 
-```bash
-# Clone and open in Android Studio, or build from CLI:
-./gradlew assembleDebug
-# APK → app/build/outputs/apk/debug/app-debug.apk
-```
-
-Requires **Android Studio Hedgehog+** or **JDK 17+**.
-
----
-
-## Install
-
-1. Copy the APK to your phone (USB / Telegram / any method)
-2. Enable **Install from unknown sources** for your file manager
-3. Install the APK
-4. Open **AI Voice Board** app
-5. Tap **Grant microphone permission**
-6. Tap **Enable keyboard** → enable in system settings
-7. Tap **Select AI Voice Board** → choose as input method
-8. Enter your **OpenAI API key** and tap **Save**
-
----
-
-## Keyboard layout
-
-```
-[⌨]  status text  [⌫] [🎤] [↵]     ← idle
-[⌨]  ● 0:05       [✕] [⏹] [↑]     ← recording
-[⌨]  Transcribing… [✕] [⠋] [↑·]   ← transcribing
-```
-
-| Button | Tap | Long press |
-|--------|-----|------------|
-| ⌨ | Switch to previous keyboard | Menu: Retry / Paste last / Settings |
-| 🎤 | Start recording | — |
-| ⌫ | Delete char | Repeat; swipe up → **Clear** pill |
-| ↵ | Insert newline | — |
-| ✕ | Cancel recording / transcription | — |
-| ⏹ | Stop → transcribe → paste | — |
-| ↑ | Stop → transcribe → paste → send | — |
-
----
+**Option B — Build from source (requires Android Studio / JDK 17):**
+1. Download or clone the repository
+2. Open in Android Studio, or build from CLI:
+   ```bash
+   ./gradlew assembleRelease
+   # APK → app/build/outputs/apk/release/app-release.apk
+   ```
 
 ## Configuration
 
-All settings are in the **AI Voice Board** app:
+All settings are in the app's settings screen:
 
-| Setting | Default | Description |
-|---------|---------|-------------|
-| API Key | *(empty)* | Your OpenAI API key (`sk-…`) |
-| Model | `gpt-4o-transcribe` | Transcription model |
-| Prompt | technical terms | Hint for the model (terminology, language style) |
-| Proxy | *(empty)* | SOCKS5 proxy, e.g. `socks5h://127.0.0.1:1080` |
-| Line break after sentence | on | Insert `\n` after `.!?` |
+| Parameter | Description | Default |
+|---|---|---|
+| API Key | OpenAI API key | — |
+| Model | Transcription model | `gpt-4o-transcribe` |
+| Prompt | Hint for the model (optional) | technical terms |
+| Proxy | SOCKS5 proxy for OpenAI API requests (optional) | empty |
+| Line break after sentence | Insert `\n` after `.!?` | on |
 
----
+**Proxy** example:
+```
+socks5h://127.0.0.1:1080
+```
 
-## Reference project
+**Models:** for the current list of supported Whisper models see [platform.openai.com/docs/models](https://platform.openai.com/docs/models).
 
-**Windows version:** [ai-voice-input](https://github.com/HaiksonLab/ai-voice-input) — AutoHotkey v2 script with the same Whisper-based voice input, configurable hotkeys, wake-word detection, and more.
+**Prompt:** optional parameter. Helps the model more accurately recognize professional terms, names, and abbreviations. Add keywords from your domain.
 
----
+## Keyboard
+
+The keyboard is a single row with three states — idle, recording, and transcribing.
+
+| Button | Tap | Long press |
+|---|---|---|
+| ⌨ | Switch to previous keyboard | Menu: Retry / Paste last / Settings |
+| 🎤 | Start recording | — |
+| ⌫ | Delete one character | Repeat; swipe up → **Clear** the whole field |
+| ↵ | Insert a newline | — |
+| ✕ | Cancel recording / transcription | — |
+| ⏹ | Stop → transcribe → paste | — |
+| ↑ | Stop → transcribe → paste → send (Enter) | — |
+
+## Known Limitations
+
+### Hallucinations on silence
+
+If nothing was said during recording and you press stop — the API may return arbitrary text instead of an empty string: a fragment from the `Prompt` or a thematically similar phrase.
+
+This is **expected behavior** of Whisper and `gpt-4o-transcribe`: models always try to decode something into text and have no "return empty when no speech" mode. Having a `Prompt` amplifies the effect — the model completes text from its context.
+
+**Simple solution:** if you started recording and said nothing — press **✕** (cancel) instead of stop. Cancel aborts recording without calling the API.
+
+### Sending in some apps
+
+The **↑** (Stop + Send) button uses the editor's declared action (`IME_ACTION_SEND`). Most chat apps respect it. In **Telegram**, sending via the keyboard action only works when *Settings → Chat Settings → Send by Enter* is enabled.
+
+## Cost
+
+Whisper API is billed by audio duration.
+At time of writing the price is approximately **$0.006 per minute** — about **$1 per 3 hours** of speech.
+
+Current pricing: [platform.openai.com/docs/pricing](https://platform.openai.com/docs/pricing)
 
 ## License
 
