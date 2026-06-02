@@ -136,8 +136,11 @@ class AiVoiceBoardIME : InputMethodService() {
 
     override fun onWindowHidden() {
         super.onWindowHidden()
+        // Recording is tied to the live mic session — closing the keyboard stops it.
+        // Transcription runs independently of the window, so let it finish: an accidental
+        // close must not throw away recognition already in progress. The result is still
+        // stored in lastText (and committed if the input field is still attached).
         if (state == State.RECORDING) cancelRecording()
-        else if (state == State.TRANSCRIBING) cancelTranscription()
     }
 
     override fun onDestroy() {
