@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="220dp"
+    android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
     android:background="@drawable/bg_menu"
@@ -23,7 +23,7 @@
         <ImageView
             android:layout_width="18dp"
             android:layout_height="18dp"
-            android:src="@drawable/ic_backspace"
+            android:src="@drawable/ic_retry"
             android:scaleType="fitCenter"
             android:alpha="0.7" />
 
@@ -35,10 +35,8 @@
             android:textColor="#E5E7EB"
             android:textSize="14sp"
             android:includeFontPadding="false" />
-
     </LinearLayout>
 
-    <!-- Divider -->
     <View
         android:layout_width="match_parent"
         android:layout_height="1dp"
@@ -62,7 +60,7 @@
         <ImageView
             android:layout_width="18dp"
             android:layout_height="18dp"
-            android:src="@drawable/ic_enter"
+            android:src="@drawable/ic_paste"
             android:scaleType="fitCenter"
             android:alpha="0.7" />
 
@@ -74,10 +72,8 @@
             android:textColor="#E5E7EB"
             android:textSize="14sp"
             android:includeFontPadding="false" />
-
     </LinearLayout>
 
-    <!-- Divider -->
     <View
         android:layout_width="match_parent"
         android:layout_height="1dp"
@@ -101,7 +97,7 @@
         <ImageView
             android:layout_width="18dp"
             android:layout_height="18dp"
-            android:src="@drawable/ic_keyboard"
+            android:src="@drawable/ic_settings"
             android:scaleType="fitCenter"
             android:alpha="0.7" />
 
@@ -113,7 +109,88 @@
             android:textColor="#E5E7EB"
             android:textSize="14sp"
             android:includeFontPadding="false" />
+    </LinearLayout>
 
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginLeft="16dp"
+        android:layout_marginRight="16dp"
+        android:background="@drawable/divider_menu" />
+
+    <!-- Update row: "Check for update" → spinner while checking → "Update app" + Info -->
+    <LinearLayout
+        android:id="@+id/itemUpdate"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingLeft="16dp"
+        android:paddingRight="6dp"
+        android:background="@drawable/bg_menu_item"
+        android:clickable="true"
+        android:focusable="true">
+
+        <FrameLayout
+            android:layout_width="18dp"
+            android:layout_height="18dp">
+
+            <ImageView
+                android:id="@+id/iconUpdate"
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:src="@drawable/ic_retry"
+                android:scaleType="fitCenter"
+                android:alpha="0.7" />
+
+            <ProgressBar
+                android:id="@+id/progressUpdate"
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:layout_gravity="center"
+                android:indeterminate="true"
+                android:indeterminateTint="#E5E7EB"
+                android:visibility="gone"
+                style="?android:attr/progressBarStyleSmall" />
+        </FrameLayout>
+
+        <TextView
+            android:id="@+id/textUpdate"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="12dp"
+            android:text="@string/menu_check_update"
+            android:textColor="#E5E7EB"
+            android:textSize="14sp"
+            android:includeFontPadding="false" />
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <!-- Vertical divider before the Info button (shown only with an update) -->
+        <View
+            android:id="@+id/infoDivider"
+            android:layout_width="1dp"
+            android:layout_height="24dp"
+            android:layout_marginLeft="6dp"
+            android:layout_marginRight="2dp"
+            android:background="@drawable/divider_menu"
+            android:visibility="gone" />
+
+        <ImageView
+            android:id="@+id/btnInfo"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:padding="7dp"
+            android:src="@drawable/ic_info"
+            android:scaleType="fitCenter"
+            android:background="@drawable/bg_menu_item"
+            android:clickable="true"
+            android:focusable="true"
+            android:contentDescription="Changelog"
+            android:visibility="gone" />
     </LinearLayout>
 
 </LinearLayout>

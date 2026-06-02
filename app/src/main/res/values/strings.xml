@@ -36,6 +36,13 @@
     <string name="menu_retry">Retry last recording</string>
     <string name="menu_paste_last">Paste last text</string>
     <string name="menu_settings">Settings</string>
+    <string name="menu_check_update">Check for update</string>
+    <string name="menu_checking_update">Checking…</string>
+    <string name="menu_update_now">Update app</string>
+    <string name="update_available">Update available: %1$s</string>
+    <string name="update_up_to_date">You have the latest version</string>
+    <string name="update_check_error">Update check failed: %1$s</string>
+    <string name="update_downloading">Downloading update…</string>
     <string name="permission_mic_request">Grant microphone permission</string>
     <string name="permission_mic_granted">✓ Microphone permission granted</string>
     <string name="permission_mic_denied">Microphone permission denied — voice input will not work</string>

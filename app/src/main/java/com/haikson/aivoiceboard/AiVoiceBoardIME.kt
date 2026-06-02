@@ -1,8 +1,14 @@
 package com.haikson.aivoiceboard
 
+import android.app.DownloadManager
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.inputmethodservice.InputMethodService
+import android.net.Uri
 import android.os.Build
+import android.os.Environment
 import android.view.ContextThemeWrapper
 import android.view.Gravity
 import android.view.LayoutInflater
@@ -10,16 +16,19 @@ import android.view.MotionEvent
 import android.view.View
 import android.graphics.Canvas
 import android.graphics.Paint
+import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
 import android.text.SpannableString
 import android.text.style.ImageSpan
 import android.widget.ImageButton
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.PopupMenu
 import android.widget.PopupWindow
 import android.widget.TextView
 import android.widget.Toast
 import android.view.ViewGroup
+import androidx.core.content.FileProvider
 import kotlinx.coroutines.*
 import java.io.File
 
@@ -46,8 +55,12 @@ class AiVoiceBoardIME : InputMethodService() {
     private lateinit var prefs: PrefsManager
     private lateinit var recorder: AudioRecorder
     private lateinit var whisper: WhisperClient
+    private val updateChecker = UpdateChecker()
+    private var updateCheckJob: Job? = null
+    private var downloadReceiver: BroadcastReceiver? = null
 
     // --- Views ---
+    private var updateBadgeView: View? = null
     private var tvStatus: TextView? = null
     private var waveform: WaveformView? = null
     private var rowIdle: LinearLayout? = null
@@ -65,6 +78,7 @@ class AiVoiceBoardIME : InputMethodService() {
         recorder = AudioRecorder()
         whisper = WhisperClient(prefs)
         lastWavCache = File(cacheDir, "last_recording.wav")
+        registerDownloadReceiver()
     }
 
     override fun onCreateInputView(): View {
@@ -76,6 +90,10 @@ class AiVoiceBoardIME : InputMethodService() {
         rowIdle        = view.findViewById(R.id.rowIdle)
         rowRecording   = view.findViewById(R.id.rowRecording)
         rowTranscribing = view.findViewById(R.id.rowTranscribing)
+        updateBadgeView = view.findViewById(R.id.updateBadge)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            updateBadgeView?.isForceDarkAllowed = false
+        }
 
         // Left: tap = switch IME, long press = overflow menu
         val btnSwitchIme = view.findViewById<ImageButton>(R.id.btnSwitchIme)
@@ -135,7 +153,13 @@ class AiVoiceBoardIME : InputMethodService() {
         }
 
         updateUi()
+        updateBadge()
         return view
+    }
+
+    override fun onWindowShown() {
+        super.onWindowShown()
+        maybeAutoCheckUpdate()
     }
 
     override fun onWindowHidden() {
@@ -151,6 +175,7 @@ class AiVoiceBoardIME : InputMethodService() {
         backspaceJob?.cancel()
         scope.cancel()
         recorder.cancel()
+        downloadReceiver?.let { runCatching { unregisterReceiver(it) } }
         super.onDestroy()
     }
 
@@ -160,39 +185,50 @@ class AiVoiceBoardIME : InputMethodService() {
 
     private fun showOverflowMenu(anchor: View) {
         val ctx = ContextThemeWrapper(this, R.style.Theme_AiVoiceBoard)
-        val popup = android.widget.PopupMenu(ctx, anchor)
-
-        popup.menu.add(0, 1, 0, getString(R.string.menu_retry))
-            .setIcon(R.drawable.ic_retry)
-        popup.menu.add(0, 2, 0, getString(R.string.menu_paste_last))
-            .setIcon(R.drawable.ic_paste)
-        popup.menu.add(0, 3, 0, getString(R.string.menu_settings))
-            .setIcon(R.drawable.ic_settings)
-
-        // Force icons visible
-        try {
-            if (android.os.Build.VERSION.SDK_INT >= 29) {
-                popup.setForceShowIcon(true)
-            } else {
-                val f = popup.javaClass.getDeclaredField("mPopup")
-                f.isAccessible = true
-                val helper = f.get(popup)
-                helper?.javaClass
-                    ?.getDeclaredMethod("setForceShowIcon", Boolean::class.java)
-                    ?.also { it.isAccessible = true }
-                    ?.invoke(helper, true)
-            }
-        } catch (_: Exception) {}
-
-        popup.setOnMenuItemClickListener { item ->
-            when (item.itemId) {
-                1 -> retryTranscribe()
-                2 -> pasteLast()
-                3 -> openSettings()
-            }
-            true
+        val v = LayoutInflater.from(ctx).inflate(R.layout.popup_overflow, null)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            v.isForceDarkAllowed = false   // keep menu colours as designed on dark-theme devices
         }
-        popup.show()
+        val menuWidth = (248 * resources.displayMetrics.density).toInt()
+        val popup = PopupWindow(v, menuWidth, ViewGroup.LayoutParams.WRAP_CONTENT, true)
+        popup.setBackgroundDrawable(ColorDrawable(0x00000000))
+        popup.isOutsideTouchable = true
+        popup.isClippingEnabled = false   // allow drawing outside the small IME window
+
+        v.findViewById<View>(R.id.itemRetry).setOnClickListener { popup.dismiss(); retryTranscribe() }
+        v.findViewById<View>(R.id.itemPaste).setOnClickListener { popup.dismiss(); pasteLast() }
+        v.findViewById<View>(R.id.itemSettings).setOnClickListener { popup.dismiss(); openSettings() }
+
+        val itemUpdate = v.findViewById<View>(R.id.itemUpdate)
+        val icon = v.findViewById<ImageView>(R.id.iconUpdate)
+        val spinner = v.findViewById<View>(R.id.progressUpdate)
+        val text = v.findViewById<TextView>(R.id.textUpdate)
+        val infoDivider = v.findViewById<View>(R.id.infoDivider)
+        val infoBtn = v.findViewById<View>(R.id.btnInfo)
+
+        if (hasUpdate()) {
+            icon.setImageResource(R.drawable.ic_update)
+            text.text = "${getString(R.string.menu_update_now)} (${prefs.latestVersion})"
+            infoDivider.visibility = View.VISIBLE
+            infoBtn.visibility = View.VISIBLE
+            itemUpdate.setOnClickListener { popup.dismiss(); startUpdateDownload() }
+            infoBtn.setOnClickListener { openChangelog(popup, prefs.latestReleaseUrl) }
+        } else {
+            icon.setImageResource(R.drawable.ic_retry)
+            text.text = getString(R.string.menu_check_update)
+            infoDivider.visibility = View.GONE
+            infoBtn.visibility = View.GONE
+            itemUpdate.setOnClickListener {
+                runInteractiveCheck(popup, itemUpdate, icon, spinner, text, infoDivider, infoBtn)
+            }
+        }
+
+        // Open above the anchor (the keyboard sits at the screen bottom).
+        v.measure(
+            View.MeasureSpec.makeMeasureSpec(menuWidth, View.MeasureSpec.EXACTLY),
+            View.MeasureSpec.UNSPECIFIED
+        )
+        popup.showAsDropDown(anchor, 0, -(v.measuredHeight + anchor.height))
     }
 
     // -------------------------------------------------------------------------
@@ -296,6 +332,175 @@ class AiVoiceBoardIME : InputMethodService() {
                         "Error: ${e.message}",
                         Toast.LENGTH_LONG
                     ).show()
+                }
+            )
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Updates
+    // -------------------------------------------------------------------------
+
+    private fun currentVersionName(): String =
+        runCatching { packageManager.getPackageInfo(packageName, 0).versionName ?: "" }
+            .getOrDefault("")
+
+    private fun hasUpdate(): Boolean {
+        val v = prefs.latestVersion
+        return v.isNotEmpty() && UpdateChecker.isNewer(v, currentVersionName())
+    }
+
+    private fun updateBadge() {
+        updateBadgeView?.visibility = if (hasUpdate()) View.VISIBLE else View.GONE
+    }
+
+    // Triggered on keyboard open, throttled to once per hour. Errors are silent.
+    private fun maybeAutoCheckUpdate() {
+        val hour = 60 * 60 * 1000L
+        if (System.currentTimeMillis() - prefs.lastUpdateCheckMs < hour) return
+        checkForUpdate(manual = false)
+    }
+
+    // manual = true → report result/error via Toast; false → silent (auto check).
+    private fun checkForUpdate(manual: Boolean) {
+        if (updateCheckJob?.isActive == true) return
+        prefs.lastUpdateCheckMs = System.currentTimeMillis()   // record attempt, even on failure
+        updateCheckJob = scope.launch {
+            val result = runCatching { withContext(Dispatchers.IO) { updateChecker.fetchLatest() } }
+            result.fold(
+                onSuccess = { info ->
+                    if (UpdateChecker.isNewer(info.version, currentVersionName())) {
+                        prefs.latestVersion = info.version
+                        prefs.latestApkUrl = info.apkUrl
+                        prefs.latestReleaseUrl = info.releaseUrl
+                        if (manual) toast(getString(R.string.update_available, info.version))
+                    } else {
+                        prefs.latestVersion = ""
+                        prefs.latestApkUrl = ""
+                        if (manual) toast(getString(R.string.update_up_to_date))
+                    }
+                    updateBadge()
+                },
+                onFailure = { e ->
+                    if (manual) toast(getString(R.string.update_check_error, e.message ?: ""))
+                    // automatic check: stay silent
+                }
+            )
+        }
+    }
+
+    private fun startUpdateDownload() {
+        val url = prefs.latestApkUrl
+        if (url.isEmpty()) { checkForUpdate(manual = true); return }
+        try {
+            val dest = File(getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), "update.apk")
+            if (dest.exists()) dest.delete()
+            val req = DownloadManager.Request(Uri.parse(url))
+                .setTitle("${getString(R.string.app_name)} ${prefs.latestVersion}")
+                .setMimeType("application/vnd.android.package-archive")
+                .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                .setDestinationInExternalFilesDir(this, Environment.DIRECTORY_DOWNLOADS, "update.apk")
+            val dm = getSystemService(DOWNLOAD_SERVICE) as DownloadManager
+            prefs.pendingDownloadId = dm.enqueue(req)
+            toast(getString(R.string.update_downloading))
+        } catch (e: Exception) {
+            toast(getString(R.string.update_check_error, e.message ?: ""))
+        }
+    }
+
+    private fun registerDownloadReceiver() {
+        downloadReceiver = object : BroadcastReceiver() {
+            override fun onReceive(c: Context?, intent: Intent?) {
+                val id = intent?.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1L) ?: -1L
+                if (id != -1L && id == prefs.pendingDownloadId) onDownloadComplete(id)
+            }
+        }
+        val filter = IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(downloadReceiver, filter, Context.RECEIVER_EXPORTED)
+        } else {
+            @Suppress("UnspecifiedRegisterReceiverFlag")
+            registerReceiver(downloadReceiver, filter)
+        }
+    }
+
+    private fun onDownloadComplete(id: Long) {
+        prefs.pendingDownloadId = -1L
+        val file = File(getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), "update.apk")
+        if (!file.exists()) return
+        val uri = runCatching {
+            FileProvider.getUriForFile(this, "$packageName.fileprovider", file)
+        }.getOrNull() ?: return
+        val install = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(uri, "application/vnd.android.package-archive")
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        runCatching { startActivity(install) }
+            .onFailure { toast(getString(R.string.update_check_error, it.message ?: "")) }
+    }
+
+    private fun toast(msg: String) = Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
+
+    private fun openUrl(url: String) {
+        if (url.isEmpty()) return
+        runCatching {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            })
+        }.onFailure { toast(getString(R.string.update_check_error, it.message ?: "")) }
+    }
+
+    // Info button: close the menu, hide the keyboard, then open the changelog in a browser.
+    private fun openChangelog(popup: PopupWindow, url: String) {
+        runCatching { popup.dismiss() }
+        requestHideSelf(0)
+        openUrl(url)
+    }
+
+    // Interactive check from the overflow menu: spinner in place, keep the popup open.
+    // On "newer" → morph the row into "Update app" + Info; otherwise dismiss + Toast.
+    private fun runInteractiveCheck(
+        popup: PopupWindow, item: View, icon: ImageView, spinner: View,
+        text: TextView, infoDivider: View, infoBtn: View
+    ) {
+        if (updateCheckJob?.isActive == true) return
+        prefs.lastUpdateCheckMs = System.currentTimeMillis()
+        icon.visibility = View.GONE
+        spinner.visibility = View.VISIBLE
+        item.isClickable = false
+        text.text = getString(R.string.menu_checking_update)
+        updateCheckJob = scope.launch {
+            val result = runCatching { withContext(Dispatchers.IO) { updateChecker.fetchLatest() } }
+            result.fold(
+                onSuccess = { info ->
+                    val newer = UpdateChecker.isNewer(info.version, currentVersionName())
+                    if (newer) {
+                        prefs.latestVersion = info.version
+                        prefs.latestApkUrl = info.apkUrl
+                        prefs.latestReleaseUrl = info.releaseUrl
+                    } else {
+                        prefs.latestVersion = ""
+                        prefs.latestApkUrl = ""
+                    }
+                    updateBadge()
+                    if (newer && popup.isShowing) {
+                        spinner.visibility = View.GONE
+                        icon.visibility = View.VISIBLE
+                        icon.setImageResource(R.drawable.ic_update)
+                        text.text = "${getString(R.string.menu_update_now)} (${info.version})"
+                        item.isClickable = true
+                        item.setOnClickListener { popup.dismiss(); startUpdateDownload() }
+                        infoDivider.visibility = View.VISIBLE
+                        infoBtn.visibility = View.VISIBLE
+                        infoBtn.setOnClickListener { openChangelog(popup, info.releaseUrl) }
+                    } else {
+                        runCatching { popup.dismiss() }
+                        toast(getString(R.string.update_up_to_date))
+                    }
+                },
+                onFailure = { e ->
+                    runCatching { popup.dismiss() }
+                    toast(getString(R.string.update_check_error, e.message ?: ""))
                 }
             )
         }

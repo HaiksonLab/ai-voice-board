@@ -15,6 +15,27 @@ class PrefsManager(context: Context) {
     val proxy: String get() = prefs.getString("proxy", DEFAULT_PROXY) ?: DEFAULT_PROXY
     val fmtEnable: Boolean get() = prefs.getBoolean("fmt_enable", true)
 
+    // --- Update state (see UpdateChecker / AiVoiceBoardIME) ---
+    var lastUpdateCheckMs: Long
+        get() = prefs.getLong("last_update_check_ms", 0L)
+        set(v) { prefs.edit().putLong("last_update_check_ms", v).apply() }
+
+    var latestVersion: String
+        get() = prefs.getString("latest_version", "") ?: ""
+        set(v) { prefs.edit().putString("latest_version", v).apply() }
+
+    var latestApkUrl: String
+        get() = prefs.getString("latest_apk_url", "") ?: ""
+        set(v) { prefs.edit().putString("latest_apk_url", v).apply() }
+
+    var latestReleaseUrl: String
+        get() = prefs.getString("latest_release_url", "") ?: ""
+        set(v) { prefs.edit().putString("latest_release_url", v).apply() }
+
+    var pendingDownloadId: Long
+        get() = prefs.getLong("pending_download_id", -1L)
+        set(v) { prefs.edit().putLong("pending_download_id", v).apply() }
+
     companion object {
         const val DEFAULT_API_KEY = ""
         const val DEFAULT_MODEL  = "gpt-4o-transcribe"

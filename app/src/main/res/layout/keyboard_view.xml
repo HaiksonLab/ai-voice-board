@@ -10,15 +10,31 @@
     android:paddingBottom="10dp"
     android:gravity="center_vertical">
 
-    <!-- Left: tap = switch IME, long press = menu -->
-    <ImageButton
-        android:id="@+id/btnSwitchIme"
+    <!-- Left: tap = switch IME, long press = menu. Wrapped so the update badge can overlay. -->
+    <FrameLayout
         android:layout_width="44dp"
-        android:layout_height="44dp"
-        android:src="@drawable/ic_keyboard"
-        android:scaleType="center"
-        android:background="@drawable/bg_circle_none"
-        android:contentDescription="Switch keyboard" />
+        android:layout_height="44dp">
+
+        <ImageButton
+            android:id="@+id/btnSwitchIme"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:src="@drawable/ic_keyboard"
+            android:scaleType="center"
+            android:background="@drawable/bg_circle_none"
+            android:contentDescription="Switch keyboard" />
+
+        <!-- Update badge — shown only when a newer version is detected -->
+        <View
+            android:id="@+id/updateBadge"
+            android:layout_width="9dp"
+            android:layout_height="9dp"
+            android:layout_gravity="top|end"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="8dp"
+            android:background="@drawable/badge_dot"
+            android:visibility="gone" />
+    </FrameLayout>
 
     <!-- Middle + Right wrapped in FrameLayout so Clear can overlay as absolute child -->
     <FrameLayout
