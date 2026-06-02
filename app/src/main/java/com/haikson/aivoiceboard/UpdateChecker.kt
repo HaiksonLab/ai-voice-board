@@ -11,6 +11,7 @@ data class UpdateInfo(val version: String, val apkUrl: String, val releaseUrl: S
 class UpdateChecker {
 
     companion object {
+        const val REPO_URL = "https://github.com/HaiksonLab/ai-voice-board"
         private const val LATEST_RELEASE_URL =
             "https://api.github.com/repos/HaiksonLab/ai-voice-board/releases/latest"
 

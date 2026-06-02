@@ -203,23 +203,27 @@ class AiVoiceBoardIME : InputMethodService() {
         val icon = v.findViewById<ImageView>(R.id.iconUpdate)
         val spinner = v.findViewById<View>(R.id.progressUpdate)
         val text = v.findViewById<TextView>(R.id.textUpdate)
-        val infoDivider = v.findViewById<View>(R.id.infoDivider)
+        val actionDivider = v.findViewById<View>(R.id.infoDivider)
         val infoBtn = v.findViewById<View>(R.id.btnInfo)
+        val githubBtn = v.findViewById<View>(R.id.btnGithub)
 
         if (hasUpdate()) {
             icon.setImageResource(R.drawable.ic_update)
             text.text = "${getString(R.string.menu_update_now)} (${prefs.latestVersion})"
-            infoDivider.visibility = View.VISIBLE
+            actionDivider.visibility = View.VISIBLE
             infoBtn.visibility = View.VISIBLE
+            githubBtn.visibility = View.GONE
             itemUpdate.setOnClickListener { popup.dismiss(); startUpdateDownload() }
-            infoBtn.setOnClickListener { openChangelog(popup, prefs.latestReleaseUrl) }
+            infoBtn.setOnClickListener { openInBrowser(popup, prefs.latestReleaseUrl) }
         } else {
             icon.setImageResource(R.drawable.ic_retry)
             text.text = getString(R.string.menu_check_update)
-            infoDivider.visibility = View.GONE
+            actionDivider.visibility = View.VISIBLE
             infoBtn.visibility = View.GONE
+            githubBtn.visibility = View.VISIBLE
+            githubBtn.setOnClickListener { openInBrowser(popup, UpdateChecker.REPO_URL) }
             itemUpdate.setOnClickListener {
-                runInteractiveCheck(popup, itemUpdate, icon, spinner, text, infoDivider, infoBtn)
+                runInteractiveCheck(popup, itemUpdate, icon, spinner, text, actionDivider, infoBtn, githubBtn)
             }
         }
 
@@ -450,8 +454,8 @@ class AiVoiceBoardIME : InputMethodService() {
         }.onFailure { toast(getString(R.string.update_check_error, it.message ?: "")) }
     }
 
-    // Info button: close the menu, hide the keyboard, then open the changelog in a browser.
-    private fun openChangelog(popup: PopupWindow, url: String) {
+    // Close the menu, hide the keyboard, then open a link (changelog / repo) in a browser.
+    private fun openInBrowser(popup: PopupWindow, url: String) {
         runCatching { popup.dismiss() }
         requestHideSelf(0)
         openUrl(url)
@@ -461,7 +465,7 @@ class AiVoiceBoardIME : InputMethodService() {
     // On "newer" → morph the row into "Update app" + Info; otherwise dismiss + Toast.
     private fun runInteractiveCheck(
         popup: PopupWindow, item: View, icon: ImageView, spinner: View,
-        text: TextView, infoDivider: View, infoBtn: View
+        text: TextView, actionDivider: View, infoBtn: View, githubBtn: View
     ) {
         if (updateCheckJob?.isActive == true) return
         prefs.lastUpdateCheckMs = System.currentTimeMillis()
@@ -490,9 +494,10 @@ class AiVoiceBoardIME : InputMethodService() {
                         text.text = "${getString(R.string.menu_update_now)} (${info.version})"
                         item.isClickable = true
                         item.setOnClickListener { popup.dismiss(); startUpdateDownload() }
-                        infoDivider.visibility = View.VISIBLE
+                        actionDivider.visibility = View.VISIBLE
+                        githubBtn.visibility = View.GONE
                         infoBtn.visibility = View.VISIBLE
-                        infoBtn.setOnClickListener { openChangelog(popup, info.releaseUrl) }
+                        infoBtn.setOnClickListener { openInBrowser(popup, info.releaseUrl) }
                     } else {
                         runCatching { popup.dismiss() }
                         toast(getString(R.string.update_up_to_date))

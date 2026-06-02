@@ -191,6 +191,19 @@
             android:focusable="true"
             android:contentDescription="Changelog"
             android:visibility="gone" />
+
+        <ImageView
+            android:id="@+id/btnGithub"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:padding="7dp"
+            android:src="@drawable/ic_github"
+            android:scaleType="fitCenter"
+            android:background="@drawable/bg_menu_item"
+            android:clickable="true"
+            android:focusable="true"
+            android:contentDescription="GitHub repository"
+            android:visibility="gone" />
     </LinearLayout>
 
 </LinearLayout>
