@@ -40,6 +40,16 @@
             android:ellipsize="end"
             android:includeFontPadding="false" />
 
+        <!-- Live recording equalizer — overlays the centre zone, shown only while recording.
+             paddingRight matches tvStatus so bars stay clear of the right-hand buttons. -->
+        <com.haikson.aivoiceboard.WaveformView
+            android:id="@+id/waveform"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:paddingLeft="50dp"
+            android:paddingRight="156dp"
+            android:visibility="gone" />
+
         <!-- Right buttons section — pinned to the end -->
         <FrameLayout
             android:layout_width="152dp"

@@ -4,6 +4,7 @@ import android.content.Intent
 import android.inputmethodservice.InputMethodService
 import android.os.Build
 import android.view.ContextThemeWrapper
+import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
@@ -47,6 +48,7 @@ class AiVoiceBoardIME : InputMethodService() {
 
     // --- Views ---
     private var tvStatus: TextView? = null
+    private var waveform: WaveformView? = null
     private var rowIdle: LinearLayout? = null
     private var rowRecording: LinearLayout? = null
     private var rowTranscribing: LinearLayout? = null
@@ -69,6 +71,7 @@ class AiVoiceBoardIME : InputMethodService() {
         val view = LayoutInflater.from(ctx).inflate(R.layout.keyboard_view, null)
 
         tvStatus       = view.findViewById(R.id.tvStatus)
+        waveform       = view.findViewById(R.id.waveform)
         rowIdle        = view.findViewById(R.id.rowIdle)
         rowRecording   = view.findViewById(R.id.rowRecording)
         rowTranscribing = view.findViewById(R.id.rowTranscribing)
@@ -203,10 +206,13 @@ class AiVoiceBoardIME : InputMethodService() {
         recordStartMs = System.currentTimeMillis()
         updateUi()
         startTimer()
+        waveform?.sampleProvider = { recorder.copyLatestSamples(it) }
+        waveform?.startAnimating()
     }
 
     private fun cancelRecording() {
         stopTimer()
+        waveform?.stopAnimating()
         recorder.cancel()
         state = State.IDLE
         updateUi()
@@ -215,6 +221,7 @@ class AiVoiceBoardIME : InputMethodService() {
 
     private fun stopAndTranscribe() {
         stopTimer()
+        waveform?.stopAnimating()
         val wavFile = recorder.stop() ?: run { state = State.IDLE; updateUi(); return }
         wavFile.copyTo(lastWavCache, overwrite = true)
         transcribeFile(wavFile, deleteAfter = true, enterAfter = autoEnterOnStop)
@@ -367,6 +374,12 @@ class AiVoiceBoardIME : InputMethodService() {
         rowIdle?.visibility         = if (state == State.IDLE)         View.VISIBLE else View.GONE
         rowRecording?.visibility    = if (state == State.RECORDING)    View.VISIBLE else View.GONE
         rowTranscribing?.visibility = if (state == State.TRANSCRIBING) View.VISIBLE else View.GONE
+
+        // Equalizer takes the centre zone only while recording; the timer text moves
+        // to the left so the two don't overlap.
+        waveform?.visibility = if (state == State.RECORDING) View.VISIBLE else View.GONE
+        tvStatus?.gravity = if (state == State.RECORDING)
+            Gravity.START or Gravity.CENTER_VERTICAL else Gravity.CENTER
 
         tvStatus?.setTextColor(when (state) {
             State.IDLE         -> 0xFF9CA3AF.toInt()
