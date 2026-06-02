@@ -3,6 +3,20 @@
 All notable changes to this project will be documented in this file.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.1.0] - 2026-06-02
+
+### Added
+- Live spectrum equalizer (FFT) shown in the keyboard row while recording
+- In-app update check via GitHub Releases: a badge on the switch-keyboard button and an **Update app** menu action appear when a newer version is found; auto-check on keyboard open (at most once per hour, silent on error) plus a manual **Check for update** with an inline spinner
+- **Update app** downloads the APK via the system DownloadManager and launches the installer
+- **Info** button (opens the release changelog) and **GitHub** button (opens the repository) in the overflow menu
+- Toast on transcription error, in addition to the status line
+
+### Changed
+- Transcription is no longer cancelled when the keyboard is hidden — it finishes; the recognized text is inserted only if the keyboard is still open, otherwise it stays available via **Paste last**
+- Increased the delay before the auto-Send action to 250 ms
+- Overflow menu reimplemented as a custom popup (to support the inline update spinner and action buttons)
+
 ## [1.0.0] - 2026-05-31
 
 ### Added

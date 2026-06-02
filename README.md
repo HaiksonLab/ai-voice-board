@@ -20,7 +20,9 @@ A companion to [ai-voice-input](https://github.com/HaiksonLab/ai-voice-input) (t
 - **Paste last** — re-insert the last recognized text without re-recording
 - Backspace with hold-to-repeat and a swipe-up **Clear** overlay to wipe the field
 - One-tap switch back to your previous keyboard (Yandex, Gboard, etc.)
-- Recording auto-cancels when the keyboard is hidden
+- Live spectrum equalizer visualization while recording
+- Recording auto-cancels when the keyboard is hidden; transcription keeps running and inserts the text only if the keyboard is still open (otherwise available via **Paste last**)
+- In-app update check & one-tap install from GitHub Releases (badge + menu action)
 - Optional line break after each sentence
 - All settings in the app — no code editing needed
 
@@ -76,7 +78,7 @@ The keyboard is a single row with three states — idle, recording, and transcri
 
 | Button | Tap | Long press |
 |---|---|---|
-| ⌨ | Switch to previous keyboard | Menu: Retry / Paste last / Settings |
+| ⌨ | Switch to previous keyboard | Menu: Retry / Paste last / Settings / Check for update — a red dot marks an available update |
 | 🎤 | Start recording | — |
 | ⌫ | Delete one character | Repeat; swipe up → **Clear** the whole field |
 | ↵ | Insert a newline | — |
