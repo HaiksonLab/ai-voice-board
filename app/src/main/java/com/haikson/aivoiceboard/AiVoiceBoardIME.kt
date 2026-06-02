@@ -18,6 +18,7 @@ import android.widget.LinearLayout
 import android.widget.PopupMenu
 import android.widget.PopupWindow
 import android.widget.TextView
+import android.widget.Toast
 import android.view.ViewGroup
 import kotlinx.coroutines.*
 import java.io.File
@@ -274,16 +275,28 @@ class AiVoiceBoardIME : InputMethodService() {
                     if (raw.isBlank()) { setStatus(getString(R.string.status_nothing)); return@fold }
                     val text = TextFormatter.format(raw, prefs.fmtEnable)
                     lastText = text
-                    currentInputConnection?.commitText(text, 1)
-                    if (enterAfter) {
-                        delay(150)
-                        currentInputConnection?.performEditorAction(
-                            android.view.inputmethod.EditorInfo.IME_ACTION_SEND
-                        )
+                    // Only insert if the keyboard is actually visible. If it was closed
+                    // while transcribing, don't surprise-insert into whatever has focus now —
+                    // the text stays in lastText and is reachable via "Paste last".
+                    if (isInputViewShown) {
+                        currentInputConnection?.commitText(text, 1)
+                        if (enterAfter) {
+                            delay(250)
+                            currentInputConnection?.performEditorAction(
+                                android.view.inputmethod.EditorInfo.IME_ACTION_SEND
+                            )
+                        }
                     }
                     setStatus("✓ ${text.take(55)}${if (text.length > 55) "…" else ""}")
                 },
-                onFailure = { e -> setStatus("Error: ${e.message?.take(60)}") }
+                onFailure = { e ->
+                    setStatus("Error: ${e.message?.take(60)}")
+                    Toast.makeText(
+                        this@AiVoiceBoardIME,
+                        "Error: ${e.message}",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
             )
         }
     }
