@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.2.0] - 2026-06-02
+
+### Added
+- Punctuation palette on the New-line key (long-press ↵): space, comma, dot, question — these keep the palette open so you can insert several in a row — plus a divider and two send actions: smart **Send** (`performEditorAction`) and **Enter** (`KEYCODE_ENTER` keyevent)
+- Mic long-press menu with **Paste last** / **Retry last**
+- Recognition **history**: the mic menu's History action lists the last 10 recognized texts; tap one to insert it, with **Clear history**
+
+### Changed
+- **Paste last** / **Retry last** moved from the left switch-keyboard menu to the mic long-press menu
+- Menu popups are non-focusable so they no longer hide the keyboard (notably in Chrome); any open dropdown closes when the keyboard is hidden or another opens
+
 ## [1.1.0] - 2026-06-02
 
 ### Added

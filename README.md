@@ -23,6 +23,7 @@ A companion to [ai-voice-input](https://github.com/HaiksonLab/ai-voice-input) (t
 - Live spectrum equalizer visualization while recording
 - Recording auto-cancels when the keyboard is hidden; transcription keeps running and inserts the text only if the keyboard is still open (otherwise available via **Paste last**)
 - In-app update check & one-tap install from GitHub Releases (badge + menu action)
+- Punctuation palette on the New-line key (long-press) and a recognition history of the last 10 texts (from the mic long-press menu)
 - Optional line break after each sentence
 - All settings in the app — no code editing needed
 
@@ -78,10 +79,10 @@ The keyboard is a single row with three states — idle, recording, and transcri
 
 | Button | Tap | Long press |
 |---|---|---|
-| ⌨ | Switch to previous keyboard | Menu: Retry / Paste last / Settings / Check for update — a red dot marks an available update |
-| 🎤 | Start recording | — |
+| ⌨ | Switch to previous keyboard | Menu: Settings / Check for update — a red dot marks an available update |
+| 🎤 | Start recording | Menu: Paste last / Retry last / History (last 10 texts) |
 | ⌫ | Delete one character | Repeat; swipe up → **Clear** the whole field |
-| ↵ | Insert a newline | — |
+| ↵ | Insert a newline | Palette: space, comma, dot, question, Send, Enter |
 | ✕ | Cancel recording / transcription | — |
 | ⏹ | Stop → transcribe → paste | — |
 | ↑ | Stop → transcribe → paste → send (Enter) | — |
