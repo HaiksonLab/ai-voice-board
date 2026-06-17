@@ -11,6 +11,7 @@ import android.os.Build
 import android.os.Environment
 import android.view.ContextThemeWrapper
 import android.view.Gravity
+import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
@@ -51,6 +52,7 @@ class AiVoiceBoardIME : InputMethodService() {
     private var isOverClear = false
     private var recordStartMs = 0L
 
+
     // --- Components ---
     private lateinit var prefs: PrefsManager
     private lateinit var recorder: AudioRecorder
@@ -58,6 +60,7 @@ class AiVoiceBoardIME : InputMethodService() {
     private val updateChecker = UpdateChecker()
     private var updateCheckJob: Job? = null
     private var downloadReceiver: BroadcastReceiver? = null
+    private var openPopup: PopupWindow? = null
 
     // --- Views ---
     private var updateBadgeView: View? = null
@@ -102,11 +105,14 @@ class AiVoiceBoardIME : InputMethodService() {
 
         // IDLE row
         btnClearRef = view.findViewById<android.widget.TextView>(R.id.btnClear)
-        view.findViewById<ImageButton>(R.id.btnMic).setOnClickListener { startRecording() }
+        val btnMic = view.findViewById<ImageButton>(R.id.btnMic)
+        btnMic.setOnClickListener { startRecording() }
+        btnMic.setOnLongClickListener { showMicMenu(it); true }
 
-        view.findViewById<ImageButton>(R.id.btnEnter).setOnClickListener {
-            currentInputConnection?.commitText("\n", 1)
-        }
+        // ↵ — tap = newline; long-press = horizontal palette dropdown (punctuation / send / enter).
+        val btnEnter = view.findViewById<ImageButton>(R.id.btnEnter)
+        btnEnter.setOnClickListener { currentInputConnection?.commitText("\n", 1) }
+        btnEnter.setOnLongClickListener { showEnterPalette(it); true }
 
         view.findViewById<ImageButton>(R.id.btnBackspace).setOnTouchListener { _, event ->
             when (event.action) {
@@ -164,6 +170,8 @@ class AiVoiceBoardIME : InputMethodService() {
 
     override fun onWindowHidden() {
         super.onWindowHidden()
+        // Any open dropdown must not linger when the keyboard goes away.
+        openPopup?.let { runCatching { it.dismiss() } }
         // Recording is tied to the live mic session — closing the keyboard stops it.
         // Transcription runs independently of the window, so let it finish: an accidental
         // close must not throw away recognition already in progress. The result is still
@@ -183,6 +191,14 @@ class AiVoiceBoardIME : InputMethodService() {
     // Overflow menu (long press on ⌨)
     // -------------------------------------------------------------------------
 
+    // Tracks the single open dropdown so it can be dismissed when the keyboard
+    // hides or another dropdown opens.
+    private fun trackPopup(popup: PopupWindow) {
+        openPopup?.let { runCatching { it.dismiss() } }
+        openPopup = popup
+        popup.setOnDismissListener { if (openPopup === popup) openPopup = null }
+    }
+
     private fun showOverflowMenu(anchor: View) {
         val ctx = ContextThemeWrapper(this, R.style.Theme_AiVoiceBoard)
         val v = LayoutInflater.from(ctx).inflate(R.layout.popup_overflow, null)
@@ -190,13 +206,12 @@ class AiVoiceBoardIME : InputMethodService() {
             v.isForceDarkAllowed = false   // keep menu colours as designed on dark-theme devices
         }
         val menuWidth = (248 * resources.displayMetrics.density).toInt()
-        val popup = PopupWindow(v, menuWidth, ViewGroup.LayoutParams.WRAP_CONTENT, true)
+        val popup = PopupWindow(v, menuWidth, ViewGroup.LayoutParams.WRAP_CONTENT, false)
         popup.setBackgroundDrawable(ColorDrawable(0x00000000))
         popup.isOutsideTouchable = true
         popup.isClippingEnabled = false   // allow drawing outside the small IME window
+        trackPopup(popup)
 
-        v.findViewById<View>(R.id.itemRetry).setOnClickListener { popup.dismiss(); retryTranscribe() }
-        v.findViewById<View>(R.id.itemPaste).setOnClickListener { popup.dismiss(); pasteLast() }
         v.findViewById<View>(R.id.itemSettings).setOnClickListener { popup.dismiss(); openSettings() }
 
         val itemUpdate = v.findViewById<View>(R.id.itemUpdate)
@@ -233,6 +248,62 @@ class AiVoiceBoardIME : InputMethodService() {
             View.MeasureSpec.UNSPECIFIED
         )
         popup.showAsDropDown(anchor, 0, -(v.measuredHeight + anchor.height))
+    }
+
+    // Mic long-press menu: Paste last text / Retry last recording.
+    private fun showMicMenu(anchor: View) {
+        val ctx = ContextThemeWrapper(this, R.style.Theme_AiVoiceBoard)
+        val v = LayoutInflater.from(ctx).inflate(R.layout.popup_mic, null)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) v.isForceDarkAllowed = false
+        val menuWidth = (240 * resources.displayMetrics.density).toInt()
+        val popup = PopupWindow(v, menuWidth, ViewGroup.LayoutParams.WRAP_CONTENT, false)
+        popup.setBackgroundDrawable(ColorDrawable(0x00000000))
+        popup.isOutsideTouchable = true
+        popup.isClippingEnabled = false
+        trackPopup(popup)
+        v.findViewById<View>(R.id.itemMicPaste).setOnClickListener { popup.dismiss(); pasteLast() }
+        v.findViewById<View>(R.id.itemMicRetry).setOnClickListener { popup.dismiss(); retryTranscribe() }
+        v.measure(
+            View.MeasureSpec.makeMeasureSpec(menuWidth, View.MeasureSpec.EXACTLY),
+            View.MeasureSpec.UNSPECIFIED
+        )
+        popup.showAsDropDown(anchor, 0, -(v.measuredHeight + anchor.height))
+    }
+
+    // -------------------------------------------------------------------------
+    // Enter-key palette (hold ↵)
+    // -------------------------------------------------------------------------
+
+    private fun showEnterPalette(anchor: View) {
+        val ctx = ContextThemeWrapper(this, R.style.Theme_AiVoiceBoard)
+        val v = LayoutInflater.from(ctx).inflate(R.layout.popup_enter_palette, null)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) v.isForceDarkAllowed = false
+        v.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED)
+        val w = v.measuredWidth
+        val h = v.measuredHeight
+        val popup = PopupWindow(v, w, h, false)
+        popup.setBackgroundDrawable(ColorDrawable(0x00000000))
+        popup.isOutsideTouchable = true
+        popup.isClippingEnabled = false
+        trackPopup(popup)
+        // Punctuation keys keep the palette open (insert several in a row);
+        // action keys (Send / Enter) perform and close it.
+        v.findViewById<View>(R.id.palSpace).setOnClickListener { insert(" ") }
+        v.findViewById<View>(R.id.palComma).setOnClickListener { insert(",") }
+        v.findViewById<View>(R.id.palDot).setOnClickListener { insert(".") }
+        v.findViewById<View>(R.id.palQuestion).setOnClickListener { insert("?") }
+        v.findViewById<View>(R.id.palSend).setOnClickListener { popup.dismiss(); sendMessage() }
+        v.findViewById<View>(R.id.palEnter).setOnClickListener { popup.dismiss(); sendEnterKey() }
+        val xoff = (anchor.width - w) / 2
+        popup.showAsDropDown(anchor, xoff, -(h + anchor.height))
+    }
+
+    private fun insert(s: String) { currentInputConnection?.commitText(s, 1) }
+
+    private fun sendEnterKey() {
+        val ic = currentInputConnection ?: return
+        ic.sendKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_ENTER))
+        ic.sendKeyEvent(KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_ENTER))
     }
 
     // -------------------------------------------------------------------------
