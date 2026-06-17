@@ -39,7 +39,6 @@ class AiVoiceBoardIME : InputMethodService() {
     private enum class State { IDLE, RECORDING, TRANSCRIBING }
     private var state = State.IDLE
 
-    private var lastText = ""
     private lateinit var lastWavCache: File
     private var autoEnterOnStop = false
 
@@ -263,12 +262,71 @@ class AiVoiceBoardIME : InputMethodService() {
         trackPopup(popup)
         v.findViewById<View>(R.id.itemMicPaste).setOnClickListener { popup.dismiss(); pasteLast() }
         v.findViewById<View>(R.id.itemMicRetry).setOnClickListener { popup.dismiss(); retryTranscribe() }
+        v.findViewById<View>(R.id.btnHistory).setOnClickListener { popup.dismiss(); showHistory(anchor) }
         v.measure(
             View.MeasureSpec.makeMeasureSpec(menuWidth, View.MeasureSpec.EXACTLY),
             View.MeasureSpec.UNSPECIFIED
         )
         popup.showAsDropDown(anchor, 0, -(v.measuredHeight + anchor.height))
     }
+
+    // History dropdown: list of recent recognized texts, tap to insert.
+    private fun showHistory(anchor: View) {
+        val ctx = ContextThemeWrapper(this, R.style.Theme_AiVoiceBoard)
+        val v = LayoutInflater.from(ctx).inflate(R.layout.popup_history, null)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) v.isForceDarkAllowed = false
+        val menuWidth = (300 * resources.displayMetrics.density).toInt()
+        val popup = PopupWindow(v, menuWidth, ViewGroup.LayoutParams.WRAP_CONTENT, false)
+        popup.setBackgroundDrawable(ColorDrawable(0x00000000))
+        popup.isOutsideTouchable = true
+        popup.isClippingEnabled = false
+        trackPopup(popup)
+
+        val container = v.findViewById<LinearLayout>(R.id.historyContainer)
+        val history = prefs.getHistory()
+        if (history.isEmpty()) {
+            val empty = TextView(ctx)
+            empty.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dpi(44))
+            empty.text = getString(R.string.history_empty)
+            empty.setTextColor(0xFF6B7280.toInt())
+            empty.textSize = 14f
+            empty.gravity = Gravity.CENTER_VERTICAL
+            empty.setPadding(dpi(16), 0, dpi(16), 0)
+            container.addView(empty)
+            v.findViewById<View>(R.id.historyClearDivider).visibility = View.GONE
+            v.findViewById<View>(R.id.itemClearHistory).visibility = View.GONE
+        } else {
+            for (item in history) container.addView(makeHistoryRow(ctx, item, popup))
+            v.findViewById<View>(R.id.itemClearHistory).setOnClickListener {
+                popup.dismiss(); prefs.clearHistory()
+            }
+        }
+
+        v.measure(
+            View.MeasureSpec.makeMeasureSpec(menuWidth, View.MeasureSpec.EXACTLY),
+            View.MeasureSpec.UNSPECIFIED
+        )
+        popup.showAsDropDown(anchor, 0, -(v.measuredHeight + anchor.height))
+    }
+
+    private fun makeHistoryRow(ctx: ContextThemeWrapper, text: String, popup: PopupWindow): View {
+        val tv = TextView(ctx)
+        tv.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dpi(44))
+        val oneLine = text.replace("\n", " ")
+        tv.text = if (oneLine.length > 48) oneLine.take(48) + "…" else oneLine
+        tv.setTextColor(0xFFE5E7EB.toInt())
+        tv.textSize = 14f
+        tv.gravity = Gravity.CENTER_VERTICAL
+        tv.setPadding(dpi(16), 0, dpi(16), 0)
+        tv.maxLines = 1
+        tv.ellipsize = android.text.TextUtils.TruncateAt.END
+        tv.setBackgroundResource(R.drawable.bg_menu_item)
+        tv.isClickable = true
+        tv.setOnClickListener { popup.dismiss(); currentInputConnection?.commitText(text, 1) }
+        return tv
+    }
+
+    private fun dpi(v: Int) = (v * resources.displayMetrics.density).toInt()
 
     // -------------------------------------------------------------------------
     // Enter-key palette (hold ↵)
@@ -359,8 +417,9 @@ class AiVoiceBoardIME : InputMethodService() {
     }
 
     private fun pasteLast() {
-        if (lastText.isEmpty()) { setStatus(getString(R.string.status_no_last_text)); return }
-        currentInputConnection?.commitText(lastText, 1)
+        val last = prefs.getHistory().firstOrNull()
+        if (last == null) { setStatus(getString(R.string.status_no_last_text)); return }
+        currentInputConnection?.commitText(last, 1)
     }
 
     private fun openSettings() {
@@ -385,7 +444,7 @@ class AiVoiceBoardIME : InputMethodService() {
                 onSuccess = { raw ->
                     if (raw.isBlank()) { setStatus(getString(R.string.status_nothing)); return@fold }
                     val text = TextFormatter.format(raw, prefs.fmtEnable)
-                    lastText = text
+                    prefs.addHistory(text)
                     // Only insert if the keyboard is actually visible. If it was closed
                     // while transcribing, don't surprise-insert into whatever has focus now —
                     // the text stays in lastText and is reachable via "Paste last".

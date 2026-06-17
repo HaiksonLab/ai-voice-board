@@ -7,7 +7,7 @@
     android:paddingTop="6dp"
     android:paddingBottom="6dp">
 
-    <!-- Paste last text -->
+    <!-- Paste last text  +  History action on the right -->
     <LinearLayout
         android:id="@+id/itemMicPaste"
         android:layout_width="match_parent"
@@ -15,7 +15,7 @@
         android:orientation="horizontal"
         android:gravity="center_vertical"
         android:paddingLeft="16dp"
-        android:paddingRight="16dp"
+        android:paddingRight="6dp"
         android:background="@drawable/bg_menu_item"
         android:clickable="true"
         android:focusable="true">
@@ -35,6 +35,31 @@
             android:textColor="#E5E7EB"
             android:textSize="14sp"
             android:includeFontPadding="false" />
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <View
+            android:id="@+id/historyDivider"
+            android:layout_width="1dp"
+            android:layout_height="24dp"
+            android:layout_marginLeft="6dp"
+            android:layout_marginRight="2dp"
+            android:background="@drawable/divider_menu" />
+
+        <ImageView
+            android:id="@+id/btnHistory"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:padding="7dp"
+            android:src="@drawable/ic_history"
+            android:scaleType="fitCenter"
+            android:background="@drawable/bg_menu_item"
+            android:clickable="true"
+            android:focusable="true"
+            android:contentDescription="History" />
     </LinearLayout>
 
     <View

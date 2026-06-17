@@ -39,6 +39,8 @@
     <string name="menu_check_update">Check for update</string>
     <string name="menu_checking_update">Checking…</string>
     <string name="menu_update_now">Update app</string>
+    <string name="menu_clear_history">Clear history</string>
+    <string name="history_empty">No history yet</string>
     <string name="update_available">Update available: %1$s</string>
     <string name="update_up_to_date">You have the latest version</string>
     <string name="update_check_error">Update check failed: %1$s</string>

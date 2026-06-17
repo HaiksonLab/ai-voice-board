@@ -36,7 +36,31 @@ class PrefsManager(context: Context) {
         get() = prefs.getLong("pending_download_id", -1L)
         set(v) { prefs.edit().putLong("pending_download_id", v).apply() }
 
+    // --- Recognition history (newest first, max HISTORY_SIZE, de-duplicated) ---
+    fun getHistory(): List<String> {
+        val raw = prefs.getString("history", "") ?: ""
+        if (raw.isEmpty()) return emptyList()
+        return try {
+            val arr = org.json.JSONArray(raw)
+            List(arr.length()) { arr.getString(it) }
+        } catch (_: Exception) { emptyList() }
+    }
+
+    fun addHistory(text: String) {
+        if (text.isBlank()) return
+        val list = getHistory().toMutableList()
+        list.removeAll { it == text }
+        list.add(0, text)
+        while (list.size > HISTORY_SIZE) list.removeAt(list.size - 1)
+        val arr = org.json.JSONArray()
+        list.forEach { arr.put(it) }
+        prefs.edit().putString("history", arr.toString()).apply()
+    }
+
+    fun clearHistory() { prefs.edit().remove("history").apply() }
+
     companion object {
+        const val HISTORY_SIZE = 10
         const val DEFAULT_API_KEY = ""
         const val DEFAULT_MODEL  = "gpt-4o-transcribe"
         const val DEFAULT_PROXY  = ""
