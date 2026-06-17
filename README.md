@@ -36,7 +36,7 @@ A companion to [ai-voice-input](https://github.com/HaiksonLab/ai-voice-input) (t
 ## Installation
 
 **Option A — APK (recommended):**
-1. Download `AiVoiceBoard-vX.X.X.apk` from the [latest release](https://github.com/HaiksonLab/ai-voice-board/releases/latest)
+1. Download `ai-voice-board-vX.X.X.apk` from the [latest release](https://github.com/HaiksonLab/ai-voice-board/releases/latest)
 2. Copy it to your phone and install (allow *Install from unknown sources* if prompted)
 3. Open the **AI Voice Board** app
 4. Tap **Grant microphone permission**
@@ -86,6 +86,12 @@ The keyboard is a single row with three states — idle, recording, and transcri
 | ✕ | Cancel recording / transcription | — |
 | ⏹ | Stop → transcribe → paste | — |
 | ↑ | Stop → transcribe → paste → send (Enter) | — |
+
+**New-line palette (long-press ↵).** A row pops up above the key: punctuation (space, comma, dot, question) inserts the character and **keeps the palette open**, so you can add several in a row; **Send** triggers the field's send action (`performEditorAction`), **Enter** sends a real `Enter` key event. Tap outside to close.
+
+**Mic menu (long-press 🎤).** **Paste last** re-inserts the most recent recognized text; **Retry last** re-sends the last recording for transcription; **History** lists the last 10 recognized texts — tap one to insert it, or **Clear history** to empty the list. History is de-duplicated and persists across restarts.
+
+**Updates (long-press ⌨ → Check for update).** The app checks GitHub Releases on keyboard open (at most once per hour, silently) and on demand. When a newer version exists, a red dot appears on the ⌨ button and the menu shows **Update app**, which downloads the APK and launches the installer. **Info** opens the release changelog; **GitHub** opens the repository.
 
 ## Known Limitations
 
