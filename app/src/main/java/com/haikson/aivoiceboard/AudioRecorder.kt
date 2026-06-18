@@ -34,6 +34,12 @@ class AudioRecorder {
     @Volatile var amplitude: Float = 0f
         private set
 
+    // Pause state: while paused the mic is still drained but nothing is written to
+    // the file. On resume a short fixed silence is injected (see resume()).
+    @Volatile var isPaused = false
+        private set
+    @Volatile private var pendingSilenceBytes = 0
+
     // Ring buffer of the most recent normalised samples (-1..1), exposed to the
     // spectrum view for live FFT. Written by the recording thread, read by the UI.
     private val fftRing = FloatArray(FFT_SIZE)
@@ -58,6 +64,8 @@ class AudioRecorder {
         outputFile = file
         totalPcmBytes = 0L
         amplitude = 0f
+        isPaused = false
+        pendingSilenceBytes = 0
         synchronized(fftLock) { fftRing.fill(0f); fftWritePos = 0 }
         val fos = FileOutputStream(file)
         outputStream = fos
@@ -73,11 +81,16 @@ class AudioRecorder {
             val buffer = ByteArray(bufferSize)
             while (isRecording) {
                 val read = record.read(buffer, 0, buffer.size)
-                if (read > 0) {
-                    fos.write(buffer, 0, read)
-                    totalPcmBytes += read
-                    processBlock(buffer, read)
+                if (read <= 0) continue
+                if (isPaused) continue   // keep draining the mic, but write nothing
+                if (pendingSilenceBytes > 0) {
+                    fos.write(ByteArray(pendingSilenceBytes))   // injected silence on resume
+                    totalPcmBytes += pendingSilenceBytes
+                    pendingSilenceBytes = 0
                 }
+                fos.write(buffer, 0, read)
+                totalPcmBytes += read
+                processBlock(buffer, read)
             }
         }.also { it.start() }
 
@@ -88,6 +101,7 @@ class AudioRecorder {
     fun stop(): File? {
         if (!isRecording) return null
         isRecording = false
+        isPaused = false
         amplitude = 0f
         recordingThread?.join()
         audioRecord?.stop()
@@ -108,6 +122,7 @@ class AudioRecorder {
 
     fun cancel() {
         isRecording = false
+        isPaused = false
         amplitude = 0f
         recordingThread?.join()
         audioRecord?.stop()
@@ -117,6 +132,20 @@ class AudioRecorder {
         outputStream = null
         outputFile?.delete()
         outputFile = null
+    }
+
+    // Pause: stop writing mic data to the file (the mic keeps being drained).
+    fun pause() {
+        if (!isRecording || isPaused) return
+        isPaused = true
+        amplitude = 0f
+    }
+
+    // Resume: inject [silenceMs] of silence into the file, then continue real audio.
+    fun resume(silenceMs: Int) {
+        if (!isRecording || !isPaused) return
+        pendingSilenceBytes = SAMPLE_RATE * (BITS_PER_SAMPLE / 8) * silenceMs / 1000
+        isPaused = false
     }
 
     // Updates the peak amplitude and appends the block's samples to the FFT ring.

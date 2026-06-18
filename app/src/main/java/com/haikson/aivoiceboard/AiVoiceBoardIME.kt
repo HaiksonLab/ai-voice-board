@@ -50,6 +50,9 @@ class AiVoiceBoardIME : InputMethodService() {
     private var btnClearRef: android.widget.TextView? = null
     private var isOverClear = false
     private var recordStartMs = 0L
+    private var pauseHoldJob: Job? = null
+    private var pauseDownMs = 0L
+    private var pauseWallStart = 0L
 
 
     // --- Components ---
@@ -62,6 +65,7 @@ class AiVoiceBoardIME : InputMethodService() {
     private var openPopup: PopupWindow? = null
 
     // --- Views ---
+    private var rootView: View? = null
     private var updateBadgeView: View? = null
     private var tvStatus: TextView? = null
     private var waveform: WaveformView? = null
@@ -86,6 +90,7 @@ class AiVoiceBoardIME : InputMethodService() {
     override fun onCreateInputView(): View {
         val ctx = ContextThemeWrapper(this, R.style.Theme_AiVoiceBoard)
         val view = LayoutInflater.from(ctx).inflate(R.layout.keyboard_view, null)
+        rootView = view
 
         tvStatus       = view.findViewById(R.id.tvStatus)
         waveform       = view.findViewById(R.id.waveform)
@@ -112,6 +117,24 @@ class AiVoiceBoardIME : InputMethodService() {
         val btnEnter = view.findViewById<ImageButton>(R.id.btnEnter)
         btnEnter.setOnClickListener { currentInputConnection?.commitText("\n", 1) }
         btnEnter.setOnLongClickListener { showEnterPalette(it); true }
+
+        // Hold on the waveform while recording to pause; release to resume.
+        waveform?.setOnTouchListener { _, event ->
+            if (state != State.RECORDING) return@setOnTouchListener false
+            when (event.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    pauseDownMs = System.currentTimeMillis()
+                    pauseHoldJob = scope.launch { delay(150); triggerPause() }
+                    true
+                }
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    pauseHoldJob?.cancel(); pauseHoldJob = null
+                    if (recorder.isPaused) endPause()
+                    true
+                }
+                else -> false
+            }
+        }
 
         view.findViewById<ImageButton>(R.id.btnBackspace).setOnTouchListener { _, event ->
             when (event.action) {
@@ -382,6 +405,7 @@ class AiVoiceBoardIME : InputMethodService() {
 
     private fun cancelRecording() {
         stopTimer()
+        clearPauseUi()
         waveform?.stopAnimating()
         recorder.cancel()
         state = State.IDLE
@@ -391,6 +415,7 @@ class AiVoiceBoardIME : InputMethodService() {
 
     private fun stopAndTranscribe() {
         stopTimer()
+        clearPauseUi()
         waveform?.stopAnimating()
         val wavFile = recorder.stop() ?: run { state = State.IDLE; updateUi(); return }
         wavFile.copyTo(lastWavCache, overwrite = true)
@@ -402,6 +427,33 @@ class AiVoiceBoardIME : InputMethodService() {
         state = State.IDLE
         updateUi()
         setStatus(getString(R.string.status_cancelled))
+    }
+
+    // -------------------------------------------------------------------------
+    // Hold-to-pause (on the waveform)
+    // -------------------------------------------------------------------------
+
+    private fun triggerPause() {
+        if (state != State.RECORDING || recorder.isPaused) return
+        recorder.pause()
+        pauseWallStart = System.currentTimeMillis()
+        rootView?.setBackgroundColor(0xFFF59E0B.toInt())   // amber — paused
+        setStatus("⏸ ${formatElapsed()}")   // freeze the timer with a pause glyph
+    }
+
+    private fun endPause() {
+        val heldMs = System.currentTimeMillis() - pauseDownMs
+        val silence = if (heldMs > 2000) 2000 else 500
+        recorder.resume(silence)
+        // Skip the paused wall-time in the timer, but keep the injected silence in it,
+        // so the timer matches the actual recorded file length.
+        recordStartMs += (System.currentTimeMillis() - pauseWallStart) - silence
+        rootView?.setBackgroundColor(0xFF111827.toInt())
+    }
+
+    private fun clearPauseUi() {
+        pauseHoldJob?.cancel(); pauseHoldJob = null
+        rootView?.setBackgroundColor(0xFF111827.toInt())
     }
 
     // -------------------------------------------------------------------------
@@ -662,14 +714,17 @@ class AiVoiceBoardIME : InputMethodService() {
     private fun startTimer() {
         timerJob = scope.launch {
             while (state == State.RECORDING) {
-                val elapsed = (System.currentTimeMillis() - recordStartMs) / 1000
-                val mins = elapsed / 60
-                val secs = elapsed % 60
-                val t = if (mins > 0) "$mins:${secs.toString().padStart(2, '0')}" else "${secs}s"
-                setStatus("● $t")
+                if (!recorder.isPaused) setStatus("● ${formatElapsed()}")
                 delay(1000)
             }
         }
+    }
+
+    private fun formatElapsed(): String {
+        val elapsed = (System.currentTimeMillis() - recordStartMs) / 1000
+        val mins = elapsed / 60
+        val secs = elapsed % 60
+        return if (mins > 0) "$mins:${secs.toString().padStart(2, '0')}" else "${secs}s"
     }
 
     private fun stopTimer() { timerJob?.cancel(); timerJob = null }
