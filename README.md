@@ -24,6 +24,7 @@ A companion to [ai-voice-input](https://github.com/HaiksonLab/ai-voice-input) (t
 - Recording auto-cancels when the keyboard is hidden; transcription keeps running and inserts the text only if the keyboard is still open (otherwise available via **Paste last**)
 - In-app update check & one-tap install from GitHub Releases (badge + menu action)
 - Punctuation palette on the New-line key (long-press) and a recognition history of the last 10 texts (from the mic long-press menu)
+- Hold the waveform while recording to pause — trims long thinking pauses out of the file (smaller file, cheaper transcription)
 - Optional line break after each sentence
 - All settings in the app — no code editing needed
 
@@ -92,6 +93,8 @@ The keyboard is a single row with three states — idle, recording, and transcri
 **Mic menu (long-press 🎤).** **Paste last** re-inserts the most recent recognized text; **Retry last** re-sends the last recording for transcription; **History** lists the last 10 recognized texts — tap one to insert it, or **Clear history** to empty the list. History is de-duplicated and persists across restarts.
 
 **Updates (long-press ⌨ → Check for update).** The app checks GitHub Releases on keyboard open (at most once per hour, silently) and on demand. When a newer version exists, a red dot appears on the ⌨ button and the menu shows **Update app**, which downloads the APK and launches the installer. **Info** opens the release changelog; **GitHub** opens the repository.
+
+**Pause while recording (hold the waveform).** Press and hold the waveform area (~150 ms) to pause: the panel turns amber and the timer freezes with a ⏸. While held, nothing is written to the file, so a long thinking pause isn't recorded. Release to resume — a short silence is inserted (0.5 s, or 2 s if you held longer than 2 s) so words before and after the pause don't run together. This keeps the WAV smaller and the transcription cheaper.
 
 ## Known Limitations
 

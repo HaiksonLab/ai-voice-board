@@ -3,6 +3,11 @@
 All notable changes to this project will be documented in this file.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.3.0] - 2026-06-02
+
+### Added
+- Hold-to-pause while recording: press and hold the waveform (≥150 ms) to pause — the mic keeps being drained but nothing is written to the file — and release to resume. A short silence is injected on resume (2 s if held longer than 2 s, otherwise 0.5 s), so long thinking pauses don't bloat the WAV or the transcription cost. While paused the panel turns amber and the timer freezes with a ⏸ glyph.
+
 ## [1.2.1] - 2026-06-02
 
 ### Fixed
