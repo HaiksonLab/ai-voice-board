@@ -296,7 +296,7 @@ class AiVoiceBoardIME : InputMethodService() {
             v.findViewById<View>(R.id.historyClearDivider).visibility = View.GONE
             v.findViewById<View>(R.id.itemClearHistory).visibility = View.GONE
         } else {
-            for (item in history) container.addView(makeHistoryRow(ctx, item, popup))
+            for (item in history.reversed()) container.addView(makeHistoryRow(ctx, item, popup))
             v.findViewById<View>(R.id.itemClearHistory).setOnClickListener {
                 popup.dismiss(); prefs.clearHistory()
             }
